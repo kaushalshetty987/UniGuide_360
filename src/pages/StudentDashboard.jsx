@@ -9,13 +9,26 @@ const StudentDashboard = () => {
     const { studentData } = useApp();
     const navigate = useNavigate();
 
+    if (!studentData) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
+    const firstName = studentData.name ? studentData.name.split(' ')[0] : 'Student';
+    const progress = studentData.progress || 0;
+    const roadmap = studentData.roadmap || [];
+    const notifs = studentData.notifications || [];
+
     return (
         <div className="space-y-8 pb-10">
             {/* Header Section */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome, {studentData.name.split(' ')[0]}! 👋</h1>
-                    <p className="text-gray-500 dark:text-gray-400">You are <span className="text-green-600 font-semibold">{studentData.progress}%</span> through your onboarding.</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome, {firstName}! 👋</h1>
+                    <p className="text-gray-500 dark:text-gray-400">You are <span className="text-green-600 font-semibold">{progress}%</span> through your onboarding.</p>
                 </div>
                 {/* Stats Widget */}
                 <div className="hidden md:flex gap-6">
@@ -31,7 +44,7 @@ const StudentDashboard = () => {
             </header>
 
             {/* Roadmap Section */}
-            <RoadmapTimeline stages={studentData.roadmap} />
+            <RoadmapTimeline stages={roadmap} />
 
             {/* Quick Actions Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -75,7 +88,7 @@ const StudentDashboard = () => {
                     {/* Fee Payment Teaser */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg font-bold">Fee Payment Status</h2>
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Fee Payment Status</h2>
                             <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-3 py-1 rounded-full text-xs font-bold">Pending</span>
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -99,17 +112,21 @@ const StudentDashboard = () => {
                     {/* Notifications Widget */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg font-bold">Notifications</h2>
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Notifications</h2>
                             <button className="text-blue-600 dark:text-blue-400 text-xs font-semibold">Mark All Read</button>
                         </div>
                         <div className="space-y-3">
-                            {studentData.notifications.map(notif => (
-                                <div key={notif.id} className={`p-3 rounded-lg border-l-4 ${notif.read ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-300 dark:border-gray-600' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-500'}`}>
-                                    <h4 className={`font-semibold text-sm ${notif.read ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>{notif.title}</h4>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{notif.message}</p>
-                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 block">{notif.time}</span>
-                                </div>
-                            ))}
+                            {notifs.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-4">No notifications yet.</p>
+                            ) : (
+                                notifs.map(notif => (
+                                    <div key={notif.id} className={`p-3 rounded-lg border-l-4 ${notif.read ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-300 dark:border-gray-600' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-500'}`}>
+                                        <h4 className={`font-semibold text-sm ${notif.read ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>{notif.title}</h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{notif.message}</p>
+                                        <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 block">{notif.time}</span>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
 

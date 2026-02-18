@@ -1,44 +1,91 @@
 import React, { createContext, useContext, useState } from 'react';
-import { mockApi } from '../services/mockApi';
-import { mockStudent, mockAnalytics, mockMentees } from '../utils/mockData';
+import { useAuth } from './AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { dbService } from '../services/db';
+import { mockStudent, mockAnalytics, mockMentees, mockTeacherCourses, mockTeacherSchedule } from '../utils/mockData';
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-    // Initialize state from localStorage if available
-    const [userRole, setUserRole] = useState(() => localStorage.getItem('userRole') || 'student');
-    const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+    const { userRole, currentUser, logout: authLogout } = useAuth();
+    const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
 
-    const [studentData, setStudentData] = useState(mockStudent);
-    const [adminData, setAdminData] = useState(mockAnalytics);
-    const [mentees, setMentees] = useState(mockMentees);
-    const [notifications, setNotifications] = useState(mockStudent.notifications);
+    const [studentData, setStudentData] = useState(null);
+    const [adminData, setAdminData] = useState(null);
+    const [mentees, setMentees] = useState([]);
+    const [notifications, setNotifications] = useState([]);
+    const [teacherCourseData, setTeacherCourseData] = useState([]);
+    const [teacherSchedule, setTeacherSchedule] = useState(null);
 
-    // Phase 3: New State
     const [courses, setCourses] = useState([]);
-    const [documents, setDocuments] = useState(mockStudent.documents);
+    const [documents, setDocuments] = useState([]);
 
-    // Initial Data Fetch
+    // Real-time Subscriptions
     React.useEffect(() => {
-        const loadInitialData = async () => {
-            try {
-                // Determine what to load based on role (simulate)
-                const courseList = await mockApi.getCourses();
-                setCourses(courseList);
+        if (!currentUser) return;
 
-                // For admin, we would load all docs, for student just theirs. 
-                // Currently mockApi returns student docs.
-                const docs = await mockApi.getDocuments();
-                // Merge with any local "uploaded" docs if strict persistence needed
-                setDocuments(docs);
-            } catch (error) {
-                console.error("Failed to load initial data", error);
-            }
+        const unsubscribeCourses = dbService.subscribeToCourses((courseList) => {
+            setCourses(courseList);
+        });
+
+        let unsubscribeDocs = () => { };
+
+        if (userRole === 'student') {
+            unsubscribeDocs = dbService.subscribeToStudentDocuments(currentUser.uid, (docList) => {
+                setDocuments(docList);
+            });
+        } else if (userRole === 'admin') {
+            unsubscribeDocs = dbService.subscribeToAllDocuments((docList) => {
+                setDocuments(docList);
+            });
+        }
+
+        return () => {
+            unsubscribeCourses();
+            unsubscribeDocs();
         };
-        loadInitialData();
-    }, []);
+    }, [currentUser, userRole]);
 
-    // Effect to apply theme class
+    // Initial Data Load
+    React.useEffect(() => {
+        if (!currentUser || !userRole) return;
+
+        const isDemoUser = currentUser?.email === 'mamta.shetty48@gmail.com';
+
+        if (isDemoUser) {
+            console.log("AppContext: Loading MOCK data for demo user, role:", userRole);
+            // Always load all mock data so any role works for the demo account
+            setStudentData(mockStudent);
+            setAdminData(mockAnalytics);
+            setMentees(mockMentees);
+            setNotifications(mockStudent.notifications || []);
+            setTeacherCourseData(mockTeacherCourses);
+            setTeacherSchedule(mockTeacherSchedule);
+        } else {
+            console.log("AppContext: Loading FRESH state for user with role:", userRole);
+            setStudentData({
+                name: currentUser?.displayName || 'New Student',
+                email: currentUser?.email || '',
+                role: userRole,
+                avatar: currentUser?.photoURL || 'https://ui-avatars.com/api/?name=Student',
+                gpa: 0.0,
+                attendance: 0,
+                progress: 0,
+                year: '1st Year',
+                branch: 'Unassigned',
+                roadmap: [],
+                notifications: [],
+                documents: []
+            });
+            setAdminData(null);
+            setMentees([]);
+            setNotifications([]);
+            setTeacherCourseData([]);
+            setTeacherSchedule(null);
+        }
+    }, [userRole, currentUser]);
+
+    // Theme effect
     React.useEffect(() => {
         const root = window.document.documentElement;
         root.classList.remove('light', 'dark');
@@ -46,18 +93,21 @@ export const AppProvider = ({ children }) => {
         localStorage.setItem('theme', theme);
     }, [theme]);
 
-    // Effect to save userRole
-    React.useEffect(() => {
-        localStorage.setItem('userRole', userRole);
-    }, [userRole]);
-
     const toggleTheme = () => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
     };
 
-    const logout = () => {
-        localStorage.removeItem('userRole');
-        setUserRole('guest');
+    const logout = async () => {
+        await authLogout();
+        // Reset all state
+        setStudentData(null);
+        setAdminData(null);
+        setMentees([]);
+        setNotifications([]);
+        setCourses([]);
+        setDocuments([]);
+        setTeacherCourseData([]);
+        setTeacherSchedule(null);
         window.location.href = '/login';
     };
 
@@ -65,9 +115,9 @@ export const AppProvider = ({ children }) => {
     const updateProgress = (stageId) => {
         setStudentData(prev => ({
             ...prev,
-            roadmap: prev.roadmap.map(stage =>
+            roadmap: prev?.roadmap?.map(stage =>
                 stage.id === stageId ? { ...stage, status: 'completed', progress: 100 } : stage
-            ),
+            ) || []
         }));
     };
 
@@ -75,56 +125,29 @@ export const AppProvider = ({ children }) => {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     };
 
-    // Phase 3: New Actions
+    // Real Backend Actions
     const addCourse = async (course) => {
-        const newCourse = await mockApi.addCourse(course);
-        setCourses(prev => [...prev, newCourse]);
-        return newCourse;
+        return await dbService.addCourse(course);
     };
 
     const registerCourse = async (courseId) => {
-        await mockApi.registerCourse(courseId);
-        // Optimistic update or refetch could happen here
-        // For now, toggle a "registered" state in local courses if we had one
-        // or just return success
-        return true;
+        if (!currentUser) return;
+        return await dbService.registerForCourse(courseId, currentUser.uid);
     };
 
-    const uploadDocument = async (doc) => {
-        const newDoc = await mockApi.uploadDocument(doc);
-        setDocuments(prev => [newDoc, ...prev]);
-        setStudentData(prev => ({ // Update notification or status if needed
-            ...prev,
-            notifications: [{ id: Date.now(), title: "Document Uploaded", message: `${doc.name} uploaded successfully.`, type: "success", time: "Just now", read: false }, ...prev.notifications]
-        }));
+    const uploadDocument = async (file) => {
+        if (!currentUser) return;
+        return await dbService.uploadDocument(file, currentUser.uid, currentUser.displayName || 'Student');
     };
 
     const verifyDocument = async (docId, status) => {
-        // Find doc name for notification
-        const doc = documents.find(d => d.id === docId);
-
-        setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status } : d));
-
-        // Notify student (Simulated by adding to studentData since context is shared)
-        if (doc) {
-            setStudentData(prev => ({
-                ...prev,
-                notifications: [{
-                    id: Date.now(),
-                    title: `Document ${status === 'verified' ? 'Approved' : 'Rejected'}`,
-                    message: `Your ${doc.name} has been ${status}.`,
-                    type: status === 'verified' ? "success" : "urgent",
-                    time: "Just now",
-                    read: false
-                }, ...prev.notifications]
-            }));
-        }
+        return await dbService.updateDocumentStatus(docId, status);
     };
 
     return (
         <AppContext.Provider value={{
             userRole,
-            setUserRole,
+            currentUser,
             theme,
             toggleTheme,
             logout,
@@ -134,13 +157,14 @@ export const AppProvider = ({ children }) => {
             notifications,
             updateProgress,
             markNotificationRead,
-            // New Exports
             courses,
             documents,
             addCourse,
             registerCourse,
             uploadDocument,
-            verifyDocument
+            verifyDocument,
+            teacherCourseData,
+            teacherSchedule
         }}>
             {children}
         </AppContext.Provider>

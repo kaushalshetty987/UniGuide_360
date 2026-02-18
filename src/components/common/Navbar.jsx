@@ -3,8 +3,9 @@ import { Bell, Search, Menu, User } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 const Navbar = ({ toggleSidebar }) => {
-    const { userRole, notifications, theme, toggleTheme } = useApp();
-    const unreadCount = notifications.filter(n => !n.read).length;
+    const { userRole, notifications, theme, toggleTheme, currentUser } = useApp();
+    const unreadCount = (notifications || []).filter(n => !n.read).length;
+    const displayName = currentUser?.displayName || 'User';
 
     return (
         <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 fixed w-full top-0 z-30 flex items-center justify-between px-4 lg:px-6 transition-colors duration-300">
@@ -55,11 +56,15 @@ const Navbar = ({ toggleSidebar }) => {
                 {/* Profile */}
                 <div className="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-700">
                     <div className="text-right hidden sm:block">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white">Arjun Sharma</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{displayName}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{userRole}</p>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center overflow-hidden border-2 border-white dark:border-gray-700 shadow-sm">
-                        <User className="w-6 h-6 text-gray-500 dark:text-gray-300" />
+                        {currentUser?.photoURL ? (
+                            <img src={currentUser.photoURL} alt={displayName} className="w-full h-full object-cover" />
+                        ) : (
+                            <User className="w-6 h-6 text-gray-500 dark:text-gray-300" />
+                        )}
                     </div>
                 </div>
             </div>

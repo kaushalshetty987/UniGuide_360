@@ -5,19 +5,27 @@ import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 
 const ParentDashboard = () => {
-    const { studentData } = useApp();
+    const { studentData, currentUser } = useApp();
+
+    if (!studentData) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
+    const studentName = studentData.name || 'Student';
+    const progress = studentData.progress || 0;
+    const parentName = currentUser?.displayName || 'Parent';
 
     return (
         <div className="max-w-6xl mx-auto space-y-8">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">नमस्ते, Mrs. Sharma! 🙏</h1>
-                    <p className="text-gray-500">Monitoring Progress for: <span className="font-semibold text-gray-900">{studentData.name}</span></p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome, {parentName}! 🙏</h1>
+                    <p className="text-gray-500 dark:text-gray-400">Monitoring Progress for: <span className="font-semibold text-gray-900 dark:text-white">{studentName}</span></p>
                 </div>
-                <select className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-                    <option>🇮🇳 हिन्दी (Hindi)</option>
-                    <option>🇬🇧 English</option>
-                </select>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -27,19 +35,19 @@ const ParentDashboard = () => {
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row items-center gap-8">
                         <div className="w-32 h-32 shrink-0">
                             <CircularProgressbar
-                                value={studentData.progress}
-                                text={`${studentData.progress}%`}
+                                value={progress}
+                                text={`${progress}%`}
                                 styles={buildStyles({
                                     textSize: '20px',
                                     pathColor: '#10B981',
-                                    textColor: '#10B981', // Changed to green for better visibility in both modes
+                                    textColor: '#10B981',
                                     trailColor: '#E5E7EB',
                                 })}
                             />
                         </div>
                         <div className="flex-1 w-full">
                             <div className="flex justify-between items-start mb-2">
-                                <h2 className="text-lg font-bold">Onboarding Status</h2>
+                                <h2 className="text-lg font-bold dark:text-white">Onboarding Status</h2>
                                 <span className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full text-xs font-bold">On Track</span>
                             </div>
                             <div className="space-y-2">
@@ -98,7 +106,7 @@ const ParentDashboard = () => {
                         </p>
                         <div className="bg-white/20 p-3 rounded-lg text-xs backdrop-blur-sm">
                             <p className="font-bold mb-1">Recent Message:</p>
-                            "नमस्ते Mrs. Sharma! अर्जुन की दूसरी किश्त 3 दिन में देय है..."
+                            "नमस्ते! अर्जुन की दूसरी किश्त 3 दिन में देय है..."
                         </div>
                     </div>
                 </div>

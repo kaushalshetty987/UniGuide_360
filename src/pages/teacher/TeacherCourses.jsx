@@ -3,7 +3,10 @@ import { useApp } from '../../context/AppContext';
 import { Plus, BookOpen, Clock, Calendar, Users, Check } from 'lucide-react';
 
 const TeacherCourses = () => {
-    const { courses, addCourse } = useApp();
+    const { courses, addCourse, teacherCourseData } = useApp();
+
+    // Merge Firestore courses with demo teacher courses
+    const allCourses = [...(teacherCourseData || []), ...(courses || [])];
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newCourse, setNewCourse] = useState({
         code: '',
@@ -48,42 +51,60 @@ const TeacherCourses = () => {
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {courses.map(course => (
-                    <div key={course.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-all">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <BookOpen size={64} className="text-blue-600" />
+                {allCourses.length === 0 ? (
+                    <div className="col-span-full flex flex-col items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 border-dashed text-center">
+                        <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-full mb-4">
+                            <BookOpen size={32} className="text-blue-600 dark:text-blue-400" />
                         </div>
-
-                        <div className="mb-4">
-                            <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">
-                                {course.code}
-                            </span>
-                        </div>
-
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-1">{course.name}</h3>
-
-                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
-                            <div className="flex items-center gap-2">
-                                <Clock size={16} />
-                                <span>{course.credits} Credits</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Calendar size={16} />
-                                <span>{course.schedule}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Users size={16} />
-                                <span>{course.students || 0} Students Enrolled</span>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <button className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white py-2 rounded-lg text-sm font-medium transition-colors">
-                                View Details
-                            </button>
-                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No Courses Created Yet</h3>
+                        <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm">
+                            Get started by creating your first course. Students will be able to register once it's live.
+                        </p>
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                        >
+                            Create First Course
+                        </button>
                     </div>
-                ))}
+                ) : (
+                    allCourses.map(course => (
+                        <div key={course.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-all">
+                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <BookOpen size={64} className="text-blue-600" />
+                            </div>
+
+                            <div className="mb-4">
+                                <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">
+                                    {course.code}
+                                </span>
+                            </div>
+
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-1">{course.name}</h3>
+
+                            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
+                                <div className="flex items-center gap-2">
+                                    <Clock size={16} />
+                                    <span>{course.credits} Credits</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Calendar size={16} />
+                                    <span>{course.schedule}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Users size={16} />
+                                    <span>{typeof course.students === 'number' ? course.students : (course.students?.length || 0)} Students Enrolled</span>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white py-2 rounded-lg text-sm font-medium transition-colors">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
             {/* Add Course Modal */}
