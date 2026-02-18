@@ -4,13 +4,13 @@ import { initializeFirestore, enableMultiTabIndexedDbPersistence, CACHE_SIZE_UNL
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCslEuod-pEir-mMQOL7bY1A0t-pXZC94E",
-    authDomain: "uniguide-360.firebaseapp.com",
-    projectId: "uniguide-360",
-    storageBucket: "uniguide-360.firebasestorage.app",
-    messagingSenderId: "625570490356",
-    appId: "1:625570490356:web:c4c8c50188ef37f55fbba1",
-    measurementId: "G-TNXGV95PMF"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
